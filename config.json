@@ -1,0 +1,7 @@
+{
+  "ls": {
+    "command": "ls.sh",
+    "environment": "local",
+    "lang": "/bin/sh"
+  }
+}

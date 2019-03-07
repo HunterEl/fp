@@ -77,7 +77,7 @@ func commandRun(cmd *cobra.Command, args []string) {
 	// home, err := homedir.Dir()
 
 	workingdir, _ := os.Getwd()
-	commandLocation := filepath.Join(workingdir, "..", commandInfo.Command)
+	commandLocation := filepath.Join(workingdir, commandInfo.Command)
 	fmt.Println("Command location: ", commandLocation)
 	cmdArgs := []string{commandLocation}
 	cmdArgs = append(cmdArgs, args[1:]...)
@@ -102,7 +102,7 @@ type Command struct {
 }
 
 func readConfigFile() (map[string]Command, error) {
-	jsonFile, err := os.Open("../config.json")
+	jsonFile, err := os.Open("config.json")
 
 	if err != nil {
 		fmt.Println("Could not read config file (config.json)", err)
