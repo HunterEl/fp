@@ -3,5 +3,16 @@
     "command": "ls.sh",
     "environment": "local",
     "lang": "/bin/sh"
+  },
+  "node-hello": {
+    "command": "test.js",
+    "environment": "local",
+    "lang": "node"
+  },
+  "go-hello": {
+    "command": "dummy-main.go",
+    "environment": "local",
+    "lang": "go",
+    "runCommands": ["run"]
   }
 }

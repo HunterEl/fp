@@ -76,10 +76,16 @@ func commandRun(cmd *cobra.Command, args []string) {
 
 	// home, err := homedir.Dir()
 
+	runCommands := commandInfo.RunCommands
+	cmdArgs := []string{}
+	if runCommands != nil {
+		cmdArgs = runCommands
+	}
+
 	workingdir, _ := os.Getwd()
 	commandLocation := filepath.Join(workingdir, commandInfo.Command)
 	fmt.Println("Command location: ", commandLocation)
-	cmdArgs := []string{commandLocation}
+	cmdArgs = append(cmdArgs, commandLocation)
 	cmdArgs = append(cmdArgs, args[1:]...)
 	cmdVar := exec.Command(commandInfo.Lang, cmdArgs...)
 	cmdVar.Env = os.Environ()
@@ -96,9 +102,10 @@ func commandRun(cmd *cobra.Command, args []string) {
 
 // Command struct represents info relating to each command
 type Command struct {
-	Command     string `json:"command"`
-	Environment string `json:"environment"`
-	Lang        string `json:"lang"`
+	Command     string   `json:"command"`
+	Environment string   `json:"environment"`
+	Lang        string   `json:"lang"`
+	RunCommands []string `json:"runCommands"`
 }
 
 func readConfigFile() (map[string]Command, error) {
