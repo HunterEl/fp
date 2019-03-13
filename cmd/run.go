@@ -46,6 +46,11 @@ var (
 func commandRun(cmd *cobra.Command, args []string) {
 	fmt.Println("run called")
 
+	if len(args) == 0 {
+		fmt.Println("Command needed to run. Please run 'list' to see available commands.")
+		return
+	}
+
 	configMap, err := readConfigFile()
 	if err != nil {
 		fmt.Println(err)
@@ -56,14 +61,9 @@ func commandRun(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Args", args)
 
-	if len(args) == 0 {
-		fmt.Println("Command needed to run. Please run 'list' to see available commands.")
-		return
-	}
-
 	commandToRun := args[0]
 
-	fmt.Println("Attempting to: ", commandToRun)
+	fmt.Println("Attempting to run: ", commandToRun)
 
 	commandInfo, exists := configMap[commandToRun]
 	if !exists {
@@ -72,9 +72,6 @@ func commandRun(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Command exists and has the definition of: ", commandInfo)
-	// command := commandInfo.Command
-
-	// home, err := homedir.Dir()
 
 	runCommands := commandInfo.RunCommands
 	cmdArgs := []string{}

@@ -17,12 +17,17 @@ package cmd
 import (
 	"fmt"
 
+	"bufio"
+	"io/ioutil"
+	"log"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
 // configCmd represents the config command
-var configCmd = &cobra.Command{
-	Use:   "config",
+var configureCmd = &cobra.Command{
+	Use:   "configure",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -30,14 +35,41 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("config called")
-	},
+	Run: configure,
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func configure(cmd *cobra.Command, args []string) {
+	log.Print("Running the configure command...")
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("[cmds repo]: ")
+	repo, _ := reader.ReadString('\n')
+
+	log.Printf("commands repo is %s", repo)
+	// write the commands repo to fp.rc file
+	// f, err := os.Create("../fp.rc")
+	rcContents := fmt.Sprintf("commandsRepo=%s", repo)
+
+	bytes := []byte(rcContents)
+	err = ioutil.WriteFile("./fp.rc", bytes, 666)
+	check(err)
+
+	// defer f.Close()
+
+	// w := bufio.NewWriter(f)
+	// bytesWritten, err := w.WriteString(rcContents)
+	// log.Printf("Wrote %d bytes", bytesWritten)
+	// err = w.Flush()
+	// check(err)
 }
 
 func init() {
-	rootCmd.AddCommand(configCmd)
-
+	rootCmd.AddCommand(configureCmd)
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
