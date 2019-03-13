@@ -44,28 +44,20 @@ func check(e error) {
 	}
 }
 
+// Set the contents of fp.rc to be used for pulling the commands repo.
 func configure(cmd *cobra.Command, args []string) {
 	log.Print("Running the configure command...")
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("[cmds repo]: ")
 	repo, _ := reader.ReadString('\n')
 
-	log.Printf("commands repo is %s", repo)
 	// write the commands repo to fp.rc file
-	// f, err := os.Create("../fp.rc")
+	log.Printf("commands repo is %s", repo)
 	rcContents := fmt.Sprintf("commandsRepo=%s", repo)
 
 	bytes := []byte(rcContents)
-	err = ioutil.WriteFile("./fp.rc", bytes, 666)
+	err = ioutil.WriteFile("./fp.rc", bytes, 0666)
 	check(err)
-
-	// defer f.Close()
-
-	// w := bufio.NewWriter(f)
-	// bytesWritten, err := w.WriteString(rcContents)
-	// log.Printf("Wrote %d bytes", bytesWritten)
-	// err = w.Flush()
-	// check(err)
 }
 
 func init() {
