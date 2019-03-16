@@ -7,6 +7,7 @@
 
 ## Current Use:
 
+- _DISCLAIMER_ None of the below commands work just yet (2019/03/15) since moving the test scripts to [fp-test-scripts](https://github.com/HunterEl/fp-test-scripts/)
 - `go run main.go ls {additional args}`
 - `go run main.go node-hello`
 - `go run main.go go-hello`
@@ -15,3 +16,42 @@
 
 - `config.json`
 - command is relative to the config file's location
+- Schema:
+
+```{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Config Schema",
+  "description": "FP Config Schema",
+  "type": "object",
+  "required": ["commands"],
+  "properties": {
+    "commands": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["command", "lang"],
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "lang": {
+            "type": "string"
+          },
+          "runCommands": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "install": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
+```
