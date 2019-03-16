@@ -59,7 +59,7 @@ func TestFetchRepo(t *testing.T) {
 		t.Error("Could not create the .caches directory")
 	}
 
-	repoToFetch := "https://github.com/blisspointmedia/Scripts"
+	repoToFetch := "https://github.com/HunterEl/fp-test-scripts/"
 
 	err = removeRepo(repoToFetch)
 	if err != nil {
@@ -84,8 +84,8 @@ func TestFetchRepo(t *testing.T) {
 }
 
 func TestRepoURLConversion(t *testing.T) {
-	repoToFetch := "https://github.com/blisspointmedia/Scripts"
-	expectedPath := "github.com/blisspointmedia/Scripts"
+	repoToFetch := "https://github.com/HunterEl/fp-test-scripts/"
+	expectedPath := "github.com/HunterEl/fp-test-scripts"
 
 	actualPath, err := repoURLToPathName(repoToFetch)
 	if err != nil {

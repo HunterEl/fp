@@ -12,6 +12,10 @@
 - `go run main.go node-hello`
 - `go run main.go go-hello`
 
+## Tests:
+
+- run the current test suite with `go test -v ./cmd/` in the root of project
+
 ## Config:
 
 - `config.json`
