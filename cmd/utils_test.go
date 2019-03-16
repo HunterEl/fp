@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"log"
 	"os"
 	"strings"
 	"testing"
@@ -34,9 +33,8 @@ func TestCheckForLocalRepo(t *testing.T) {
 
 	defer removeCachesDir()
 
-	repoThatDoesntExist := "HunterTestRepo"
-
-	log.Printf("Looking for repo %s", repoThatDoesntExist)
+	// TODO: Test the case where the repo url is fucked up
+	repoThatDoesntExist := "https://github.com/HunterTestRepo"
 
 	repoExists, err := localRepoExists(repoThatDoesntExist)
 	if err != nil {
@@ -54,12 +52,12 @@ func TestFetchRepo(t *testing.T) {
 		t.Error(err)
 	}
 
+	defer removeCachesDir()
+
 	err = initCachesDir()
 	if err != nil {
 		t.Error("Could not create the .caches directory")
 	}
-
-	// defer removeCachesDir()
 
 	repoToFetch := "https://github.com/blisspointmedia/Scripts"
 
@@ -68,9 +66,8 @@ func TestFetchRepo(t *testing.T) {
 		t.Errorf("Could not remove the existing repo %s", repoToFetch)
 	}
 
-	result, err := fetchRepo(repoToFetch)
-	log.Printf("Fetch command output: %s", result)
-	// defer removeRepo(repoToFetch)
+	_, err = fetchRepo(repoToFetch)
+	defer removeRepo(repoToFetch)
 
 	if err != nil {
 		t.Errorf("Could not fetch the repo %s", repoToFetch)

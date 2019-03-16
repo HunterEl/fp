@@ -16,13 +16,17 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 // runCmd represents the run command
@@ -44,6 +48,17 @@ var (
 )
 
 func commandRun(cmd *cobra.Command, args []string) {
+	valid, err := validateConfigSchema()
+	if err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+
+	if !valid {
+		log.Print("config JSON did not pass the schema test")
+		os.Exit(1)
+	}
+
 	fmt.Println("run called")
 
 	if len(args) == 0 {
@@ -59,19 +74,24 @@ func commandRun(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Config map", configMap)
 
+	// TODO: Less hard-coding
+	commandMap := configMap.Commands
+
+	log.Println("Command map: ", commandMap)
+
 	fmt.Println("Args", args)
 
 	commandToRun := args[0]
 
 	fmt.Println("Attempting to run: ", commandToRun)
 
-	commandInfo, exists := configMap[commandToRun]
+	commandInfo, exists := commandMap[commandToRun]
 	if !exists {
 		fmt.Println(commandToRun, " is not an available command. Please run 'list' to see available commands.")
 		return
 	}
 
-	fmt.Println("Command exists and has the definition of: ", commandInfo)
+	fmt.Println("Command exists and has the definition of: ", commandMap)
 
 	runCommands := commandInfo.RunCommands
 	cmdArgs := []string{}
@@ -97,27 +117,76 @@ func commandRun(cmd *cobra.Command, args []string) {
 	fmt.Println("Command output: ", result)
 }
 
-// Command struct represents info relating to each command
-type Command struct {
-	Command     string   `json:"command"`
-	Environment string   `json:"environment"`
-	Lang        string   `json:"lang"`
-	RunCommands []string `json:"runCommands"`
+// Config struct mapping the fp config json
+type Config struct {
+	Commands commands `json:"commands"`
+	// TODO: ADD OTHER CONFIG PROPERTIES HERE AS WELL
 }
 
-func readConfigFile() (map[string]Command, error) {
+type commands map[string]Command
+
+// Command struct represents info relating to each command
+type Command struct {
+	Command        string   `json:"command"`
+	Environment    string   `json:"environment"`
+	Lang           string   `json:"lang"`
+	RunCommands    []string `json:"runCommands"`
+	InstallCommand string   `json:"install"`
+}
+
+func validateConfigSchema() (valid bool, err error) {
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return false, err
+	}
+
+	// https://github.com/xeipuuv/gojsonschema/issues/92
+	// reference must have a leader reference (e.g. 'file://')
+	schemaLocation := fmt.Sprintf("file://%s/config-schema.json", workingDir)
+	log.Printf("Loading Config schema from %s", schemaLocation)
+
+	// https://github.com/xeipuuv/gojsonschema
+	// TODO: We can load these configs from a lot of different places
+	// TODO: but we are doing locally for the time being
+	schemaLoader := gojsonschema.NewReferenceLoader(schemaLocation)
+
+	configLocation := fmt.Sprintf("file://%s/config.json", workingDir)
+	log.Printf("Loading config from %s", configLocation)
+	configLoader := gojsonschema.NewReferenceLoader(configLocation)
+
+	result, err := gojsonschema.Validate(schemaLoader, configLoader)
+	if err != nil {
+		return false, err
+	}
+
+	if result.Valid() {
+		return true, nil
+	}
+
+	// Go through all the schema errors and construct a new error message
+	schemaErrors := []string{}
+	for _, desc := range result.Errors() {
+		formattedError := fmt.Sprintf("- %s", desc)
+		schemaErrors = append(schemaErrors, formattedError)
+	}
+
+	schemaError := errors.New(strings.Join(schemaErrors, "\n"))
+	return false, schemaError
+}
+
+func readConfigFile() (Config, error) {
 	jsonFile, err := os.Open("config.json")
 
 	if err != nil {
 		fmt.Println("Could not read config file (config.json)", err)
-		return nil, err
+		return Config{}, err
 	}
 
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 
-	var config map[string]Command
+	var config Config
 	json.Unmarshal([]byte(byteValue), &config)
 
 	return config, nil

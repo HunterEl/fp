@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -35,7 +34,6 @@ func localRepoExists(repo string) (bool, error) {
 	repoLocation := fmt.Sprintf("%s/%s/", getCachesDir(), canonicalizedRepoPath)
 	repoExists := true
 	_, err = os.Stat(repoLocation)
-	log.Print(err)
 	if os.IsNotExist(err) {
 		repoExists = false
 	}
@@ -57,9 +55,11 @@ func removeCachesDir() (err error) {
 	caches := getCachesDir()
 
 	_, err = os.Stat(caches)
-	if !os.IsNotExist(err) {
-		err = os.RemoveAll(caches)
+	if os.IsNotExist(err) {
+		return nil
 	}
+
+	err = os.RemoveAll(caches)
 
 	return err
 }
@@ -112,7 +112,6 @@ func repoURLToPathName(repoURL string) (pathName string, err error) {
 	joinedPath := strings.Join(filePath, "/")
 	fullUnixPath := fmt.Sprintf("%s/%s", host, joinedPath)
 
-	log.Printf("Full unix path name for %s is %s", repoURL, fullUnixPath)
 	return fullUnixPath, err
 }
 
@@ -135,6 +134,8 @@ func fetchRepo(repoURL string) (commandOutput string, err error) {
 
 	repoLocation := fmt.Sprintf("%s/%s", caches, canonicalizedRepoPath)
 
+	// TODO: make the command and exec parameters to it's easier to test and
+	// TODO: generic to use in other areas
 	fetchCommand := []string{"clone", repoURL, repoLocation}
 	cmdVar := exec.Command("git", fetchCommand...)
 	cmdVar.Env = os.Environ()
