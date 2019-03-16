@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -10,6 +11,52 @@ import (
 )
 
 var cachesDir string
+
+type AppConfig struct {
+	commandsRepo string
+	// TODO: Add more commands here as we progress
+}
+
+// Iterate the app config lines and try to find the 'commandsRepo' argument
+// returns the commandsRepo value (if it exists) or and error if something went _horribly_ wrong along the way
+func readAppConfig() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	configLocation := fmt.Sprintf("%s/fp.rc", cwd)
+	b, err := ioutil.ReadFile(configLocation)
+	if err != nil {
+		return "", err
+	}
+
+	str := string(b)
+
+	lines := strings.Split(str, "\n")
+	commandsRepo := ""
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		lineParts := strings.Split(line, "=")
+		if len(lineParts) < 2 {
+			continue
+		}
+
+		if lineParts[0] == "commandsRepo" {
+			commandsRepo = lineParts[1]
+			break
+		}
+	}
+
+	if commandsRepo == "" {
+		return "", errors.New("Could not find 'commandsRepo' in the app config. It is required, you monkey")
+	}
+
+	return commandsRepo, nil
+}
 
 // TODO: This uses relative pathing for caches dir and it might be smart to decide on
 // an absolute location

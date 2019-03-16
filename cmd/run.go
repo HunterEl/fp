@@ -48,6 +48,14 @@ var (
 )
 
 func commandRun(cmd *cobra.Command, args []string) {
+	config, err := readAppConfig()
+	if err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+
+	log.Printf("Commands Repo is %s", config)
+
 	valid, err := validateConfigSchema()
 	if err != nil {
 		log.Print(err)
@@ -58,8 +66,6 @@ func commandRun(cmd *cobra.Command, args []string) {
 		log.Print("config JSON did not pass the schema test")
 		os.Exit(1)
 	}
-
-	fmt.Println("run called")
 
 	if len(args) == 0 {
 		fmt.Println("Command needed to run. Please run 'list' to see available commands.")
@@ -72,18 +78,14 @@ func commandRun(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Println("Config map", configMap)
-
 	// TODO: Less hard-coding
 	commandMap := configMap.Commands
 
-	log.Println("Command map: ", commandMap)
-
-	fmt.Println("Args", args)
+	log.Print("Args: ", args)
 
 	commandToRun := args[0]
 
-	fmt.Println("Attempting to run: ", commandToRun)
+	log.Printf("Attempting to run: %s", commandToRun)
 
 	commandInfo, exists := commandMap[commandToRun]
 	if !exists {
@@ -91,7 +93,7 @@ func commandRun(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Println("Command exists and has the definition of: ", commandMap)
+	log.Printf("Command exists and has the definition of: %s", commandInfo)
 
 	runCommands := commandInfo.RunCommands
 	cmdArgs := []string{}
@@ -101,7 +103,8 @@ func commandRun(cmd *cobra.Command, args []string) {
 
 	workingdir, _ := os.Getwd()
 	commandLocation := filepath.Join(workingdir, commandInfo.Command)
-	fmt.Println("Command location: ", commandLocation)
+	log.Printf("Command location: %s", commandLocation)
+
 	cmdArgs = append(cmdArgs, commandLocation)
 	cmdArgs = append(cmdArgs, args[1:]...)
 	cmdVar := exec.Command(commandInfo.Lang, cmdArgs...)
@@ -114,7 +117,7 @@ func commandRun(cmd *cobra.Command, args []string) {
 
 	result := string(cmdOut)
 
-	fmt.Println("Command output: ", result)
+	log.Printf("Command output: %s", result)
 }
 
 // Config struct mapping the fp config json
@@ -143,7 +146,7 @@ func validateConfigSchema() (valid bool, err error) {
 	// https://github.com/xeipuuv/gojsonschema/issues/92
 	// reference must have a leader reference (e.g. 'file://')
 	schemaLocation := fmt.Sprintf("file://%s/config-schema.json", workingDir)
-	log.Printf("Loading Config schema from %s", schemaLocation)
+	// log.Printf("Loading Config schema from %s", schemaLocation)
 
 	// https://github.com/xeipuuv/gojsonschema
 	// TODO: We can load these configs from a lot of different places
@@ -151,7 +154,7 @@ func validateConfigSchema() (valid bool, err error) {
 	schemaLoader := gojsonschema.NewReferenceLoader(schemaLocation)
 
 	configLocation := fmt.Sprintf("file://%s/config.json", workingDir)
-	log.Printf("Loading config from %s", configLocation)
+	// log.Printf("Loading config from %s", configLocation)
 	configLoader := gojsonschema.NewReferenceLoader(configLocation)
 
 	result, err := gojsonschema.Validate(schemaLoader, configLoader)
