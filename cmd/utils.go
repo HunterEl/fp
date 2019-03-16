@@ -59,14 +59,14 @@ func readAppConfig() (string, error) {
 }
 
 // TODO: This uses relative pathing for caches dir and it might be smart to decide on
-// an absolute location
+// TODO: an absolute location
 func getCachesDir() string {
 	if cachesDir != "" {
 		return cachesDir
 	}
 
 	workingDir, _ := os.Getwd()
-	cachesDir := fmt.Sprintf("%s/../.caches", workingDir)
+	cachesDir := fmt.Sprintf("%s/.caches", workingDir)
 	return cachesDir
 }
 

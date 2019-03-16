@@ -48,13 +48,32 @@ var (
 )
 
 func commandRun(cmd *cobra.Command, args []string) {
-	config, err := readAppConfig()
+	configRepo, err := readAppConfig()
 	if err != nil {
 		log.Print(err)
 		os.Exit(1)
 	}
 
-	log.Printf("Commands Repo is %s", config)
+	log.Printf("Commands Repo is %s", configRepo)
+
+	exists, err := localRepoExists(configRepo)
+	if err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+
+	log.Printf("repo %s exists locally: %v", configRepo, exists)
+
+	if !exists {
+		log.Printf("Fetcing %s...", configRepo)
+		fetchOutput, err := fetchRepo(configRepo)
+		if err != nil {
+			log.Print(err)
+			os.Exit(1)
+		}
+
+		log.Print(fetchOutput)
+	}
 
 	valid, err := validateConfigSchema()
 	if err != nil {
