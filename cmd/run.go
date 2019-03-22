@@ -15,10 +15,8 @@
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -66,16 +64,51 @@ func commandRun(cmd *cobra.Command, args []string) {
 
 	if !exists {
 		log.Printf("Fetcing %s...", configRepo)
-		fetchOutput, err := fetchRepo(configRepo)
+		_, err := fetchRepo(configRepo)
 		if err != nil {
 			log.Print(err)
 			os.Exit(1)
 		}
 
-		log.Print(fetchOutput)
 	}
 
-	valid, err := validateConfigSchema()
+	repoHasConfig, err := localRepoHasConfig(configRepo)
+	if err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+
+	if repoHasConfig == false {
+		log.Printf("Repo %s does not have a root config file (config.json)", configRepo)
+		os.Exit(1)
+	}
+
+	log.Printf("repo %s has config file: %v", configRepo, repoHasConfig)
+
+	configMap, err := loadRepoConfig(configRepo)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	log.Print("Config Map: ", configMap)
+
+	repoPath, err := fullRepoPath(configRepo)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	workingDir, err := os.Getwd()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	schemaLocation := fmt.Sprintf("%s/config-schema.json", workingDir)
+	configLocation := fmt.Sprintf("%s/config.json", repoPath)
+
+	valid, err := validateConfigSchema(schemaLocation, configLocation)
 	if err != nil {
 		log.Print(err)
 		os.Exit(1)
@@ -91,13 +124,6 @@ func commandRun(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	configMap, err := readConfigFile()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// TODO: Less hard-coding
 	commandMap := configMap.Commands
 
 	log.Print("Args: ", args)
@@ -120,8 +146,8 @@ func commandRun(cmd *cobra.Command, args []string) {
 		cmdArgs = runCommands
 	}
 
-	workingdir, _ := os.Getwd()
-	commandLocation := filepath.Join(workingdir, commandInfo.Command)
+	// Full path of the script in the caches directory
+	commandLocation := filepath.Join(repoPath, commandInfo.Command)
 	log.Printf("Command location: %s", commandLocation)
 
 	cmdArgs = append(cmdArgs, commandLocation)
@@ -139,42 +165,21 @@ func commandRun(cmd *cobra.Command, args []string) {
 	log.Printf("Command output: %s", result)
 }
 
-// Config struct mapping the fp config json
-type Config struct {
-	Commands commands `json:"commands"`
-	// TODO: ADD OTHER CONFIG PROPERTIES HERE AS WELL
-}
-
-type commands map[string]Command
-
-// Command struct represents info relating to each command
-type Command struct {
-	Command        string   `json:"command"`
-	Environment    string   `json:"environment"`
-	Lang           string   `json:"lang"`
-	RunCommands    []string `json:"runCommands"`
-	InstallCommand string   `json:"install"`
-}
-
-func validateConfigSchema() (valid bool, err error) {
-	workingDir, err := os.Getwd()
-	if err != nil {
-		return false, err
-	}
-
+func validateConfigSchema(schemaLocation string, configLocation string) (valid bool, err error) {
 	// https://github.com/xeipuuv/gojsonschema/issues/92
 	// reference must have a leader reference (e.g. 'file://')
-	schemaLocation := fmt.Sprintf("file://%s/config-schema.json", workingDir)
+	canonicalSchemaLocation := fmt.Sprintf("file://%s", schemaLocation)
 	// log.Printf("Loading Config schema from %s", schemaLocation)
 
 	// https://github.com/xeipuuv/gojsonschema
 	// TODO: We can load these configs from a lot of different places
 	// TODO: but we are doing locally for the time being
-	schemaLoader := gojsonschema.NewReferenceLoader(schemaLocation)
+	schemaLoader := gojsonschema.NewReferenceLoader(canonicalSchemaLocation)
 
-	configLocation := fmt.Sprintf("file://%s/config.json", workingDir)
+	canonicalConfigLocation := fmt.Sprintf("file://%s", configLocation)
+
 	// log.Printf("Loading config from %s", configLocation)
-	configLoader := gojsonschema.NewReferenceLoader(configLocation)
+	configLoader := gojsonschema.NewReferenceLoader(canonicalConfigLocation)
 
 	result, err := gojsonschema.Validate(schemaLoader, configLoader)
 	if err != nil {
@@ -194,24 +199,6 @@ func validateConfigSchema() (valid bool, err error) {
 
 	schemaError := errors.New(strings.Join(schemaErrors, "\n"))
 	return false, schemaError
-}
-
-func readConfigFile() (Config, error) {
-	jsonFile, err := os.Open("config.json")
-
-	if err != nil {
-		fmt.Println("Could not read config file (config.json)", err)
-		return Config{}, err
-	}
-
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var config Config
-	json.Unmarshal([]byte(byteValue), &config)
-
-	return config, nil
 }
 
 func init() {

@@ -7,7 +7,7 @@
 
 ## Current Use:
 
-- _DISCLAIMER_ None of the below commands work just yet (2019/03/15) since moving the test scripts to [fp-test-scripts](https://github.com/HunterEl/fp-test-scripts/)
+- **DISCLAIMER** None of the below commands work just yet (2019/03/15) since moving the test scripts to [fp-test-scripts](https://github.com/HunterEl/fp-test-scripts/)
 - `go run main.go ls {additional args}`
 - `go run main.go node-hello`
 - `go run main.go go-hello`

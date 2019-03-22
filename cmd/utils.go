@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -11,6 +13,23 @@ import (
 )
 
 var cachesDir string
+
+// Config struct mapping the fp config json
+type Config struct {
+	Commands commands `json:"commands"`
+	// TODO: ADD OTHER CONFIG PROPERTIES HERE AS WELL
+}
+
+type commands map[string]Command
+
+// Command struct represents info relating to each command
+type Command struct {
+	Command        string   `json:"command"`
+	Environment    string   `json:"environment"`
+	Lang           string   `json:"lang"`
+	RunCommands    []string `json:"runCommands"`
+	InstallCommand string   `json:"install"`
+}
 
 type AppConfig struct {
 	commandsRepo string
@@ -79,8 +98,59 @@ func localRepoExists(repo string) (bool, error) {
 	}
 
 	repoLocation := fmt.Sprintf("%s/%s/", getCachesDir(), canonicalizedRepoPath)
+	return fileExists(repoLocation)
+}
+
+func localRepoHasConfig(repo string) (bool, error) {
+	canonicalizedRepoPath, err := repoURLToPathName(repo)
+	if err != nil {
+		return false, err
+	}
+
+	configLocation := fmt.Sprintf("%s/%s/config.json", getCachesDir(), canonicalizedRepoPath)
+	return fileExists(configLocation)
+}
+
+func fullRepoPath(repo string) (string, error) {
+	canonicalizedRepoPath, err := repoURLToPathName(repo)
+	if err != nil {
+		return "", err
+	}
+
+	cachesDir := getCachesDir()
+
+	configLocation := fmt.Sprintf("%s/%s", cachesDir, canonicalizedRepoPath)
+	return configLocation, nil
+}
+
+func loadRepoConfig(repo string) (Config, error) {
+	canonicalizedRepoPath, err := repoURLToPathName(repo)
+	if err != nil {
+		return Config{}, err
+	}
+
+	configLocation := fmt.Sprintf("%s/%s/config.json", getCachesDir(), canonicalizedRepoPath)
+	log.Printf("Config location of %s", configLocation)
+	jsonFile, err := os.Open(configLocation)
+
+	if err != nil {
+		log.Printf("Could not read config file from %s", configLocation)
+		return Config{}, err
+	}
+
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var config Config
+	json.Unmarshal([]byte(byteValue), &config)
+
+	return config, nil
+}
+
+func fileExists(path string) (bool, error) {
 	repoExists := true
-	_, err = os.Stat(repoLocation)
+	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
 		repoExists = false
 	}
